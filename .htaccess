@@ -1,0 +1,34 @@
+RewriteEngine On
+Options -Indexes
+DirectoryIndex index.php index.html
+
+# Block direct access to hidden files and env/secrets
+RewriteRule "(^|/)\." - [F,L]
+<FilesMatch "^(\.env|\.env\..*|\.htaccess|composer\.(json|lock))$">
+    Require all denied
+</FilesMatch>
+
+RewriteCond %{HTTPS} !=on
+RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)(:\d+)?$ [NC]
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+RewriteRule ^includes/login\.php$ login.php [R=301,L,NC]
+RewriteRule ^includes/signup\.php$ signup.php [R=301,L,NC]
+RewriteRule ^includes/forgot_password\.php$ forgot_password.php [R=301,L,NC]
+RewriteRule ^includes/reset_password\.php$ reset_password.php [R=301,L,NC]
+RewriteRule ^includes/signin\.php$ admin-login.php [R=301,L,NC]
+
+RewriteRule ^about\.html$ about.php [R=301,L,NC]
+RewriteRule ^service\.html$ service.php [R=301,L,NC]
+RewriteRule ^service1\.html$ service1.php [R=301,L,NC]
+RewriteRule ^feature\.html$ feature.php [R=301,L,NC]
+RewriteRule ^team\.html$ team.php [R=301,L,NC]
+RewriteRule ^testimonial\.html$ testimonial.php [R=301,L,NC]
+RewriteRule ^contact\.html$ contact.php [R=301,L,NC]
+
+php_value upload_max_filesize 200M
+php_value post_max_size 220M
+php_value max_execution_time 300
+php_value max_input_time 300
+php_value memory_limit 512M
+LimitRequestBody 0
