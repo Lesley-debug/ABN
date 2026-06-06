@@ -1,5 +1,8 @@
 FROM php:8.2-apache
 
+# Install composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
 # Install database extensions
 RUN docker-php-ext-install mysqli pdo pdo_mysql
 
@@ -11,6 +14,9 @@ RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
 
 # Copy your application files
 COPY . /var/www/html/
+
+# Install PHP dependencies
+RUN cd /var/www/html && composer install --no-dev --optimize-autoloader
 
 # Set proper permissions for the web server
 RUN chown -R www-data:www-data /var/www/html
