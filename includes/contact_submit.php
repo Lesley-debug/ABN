@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 use PHPMailer\PHPMailer\Exception;
@@ -6,7 +7,13 @@ use PHPMailer\PHPMailer\PHPMailer;
 
 require_once __DIR__ . '/session_bootstrap.php';
 require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/../vendor/autoload.php';
+// Load Composer autoload if available
+$composerAutoload = __DIR__ . '/../vendor/autoload.php';
+if (file_exists($composerAutoload)) {
+    require_once $composerAutoload;
+} else {
+    error_log('Missing Composer autoload: ' . $composerAutoload);
+}
 
 function expectsJson(): bool
 {
@@ -152,45 +159,50 @@ $mailSent = false;
 $mailConfigured = ($smtpUser !== '' && $smtpPass !== '' && $smtpFrom !== '' && $contactTo !== '');
 $mailError = '';
 if ($mailConfigured) {
-    try {
-        $mail = new PHPMailer(true);
-        $mail->isSMTP();
-        $mail->Host = $smtpHost;
-        $mail->SMTPAuth = true;
-        $mail->Username = $smtpUser;
-        $mail->Password = $smtpPass;
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = $smtpPort;
+    if (class_exists('PHPMailer\\PHPMailer\\PHPMailer')) {
+        try {
+            $mail = new PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host = $smtpHost;
+            $mail->SMTPAuth = true;
+            $mail->Username = $smtpUser;
+            $mail->Password = $smtpPass;
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port = $smtpPort;
 
-        $mail->setFrom($smtpFrom, 'ABN Website Contact');
-        $mail->addAddress($contactTo);
-        $mail->addReplyTo($email, $name);
-        $mail->isHTML(true);
-        $mail->Subject = 'New Contact Message: ' . $subject;
-        $mail->Body = sprintf(
-            '<h3>New Message from ABN Contact Form</h3>
-            <p><strong>Name:</strong> %s</p>
-            <p><strong>Email:</strong> %s</p>
-            <p><strong>Phone:</strong> %s</p>
-            <p><strong>Project:</strong> %s</p>
-            <p><strong>Subject:</strong> %s</p>
-            <p><strong>Message:</strong><br>%s</p>',
-            htmlspecialchars($name, ENT_QUOTES, 'UTF-8'),
-            htmlspecialchars($email, ENT_QUOTES, 'UTF-8'),
-            htmlspecialchars($phone !== '' ? $phone : '-', ENT_QUOTES, 'UTF-8'),
-            htmlspecialchars($project !== '' ? $project : '-', ENT_QUOTES, 'UTF-8'),
-            htmlspecialchars($subject, ENT_QUOTES, 'UTF-8'),
-            nl2br(htmlspecialchars($message, ENT_QUOTES, 'UTF-8'))
-        );
-        $mail->AltBody = "New Message from ABN Contact Form\n"
-            . "Name: {$name}\nEmail: {$email}\nPhone: " . ($phone !== '' ? $phone : '-') . "\n"
-            . "Project: " . ($project !== '' ? $project : '-') . "\nSubject: {$subject}\n\nMessage:\n{$message}\n";
-        $mail->send();
-        $mailSent = true;
-    } catch (Exception $e) {
-        $mailSent = false;
-        $mailError = $e->getMessage();
-        error_log('Contact SMTP send failed: ' . $e->getMessage());
+            $mail->setFrom($smtpFrom, 'ABN Website Contact');
+            $mail->addAddress($contactTo);
+            $mail->addReplyTo($email, $name);
+            $mail->isHTML(true);
+            $mail->Subject = 'New Contact Message: ' . $subject;
+            $mail->Body = sprintf(
+                '<h3>New Message from ABN Contact Form</h3>
+                <p><strong>Name:</strong> %s</p>
+                <p><strong>Email:</strong> %s</p>
+                <p><strong>Phone:</strong> %s</p>
+                <p><strong>Project:</strong> %s</p>
+                <p><strong>Subject:</strong> %s</p>
+                <p><strong>Message:</strong><br>%s</p>',
+                htmlspecialchars($name, ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars($email, ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars($phone !== '' ? $phone : '-', ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars($project !== '' ? $project : '-', ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars($subject, ENT_QUOTES, 'UTF-8'),
+                nl2br(htmlspecialchars($message, ENT_QUOTES, 'UTF-8'))
+            );
+            $mail->AltBody = "New Message from ABN Contact Form\n"
+                . "Name: {$name}\nEmail: {$email}\nPhone: " . ($phone !== '' ? $phone : '-') . "\n"
+                . "Project: " . ($project !== '' ? $project : '-') . "\nSubject: {$subject}\n\nMessage:\n{$message}\n";
+            $mail->send();
+            $mailSent = true;
+        } catch (Exception $e) {
+            $mailSent = false;
+            $mailError = $e->getMessage();
+            error_log('Contact SMTP send failed: ' . $e->getMessage());
+        }
+    } else {
+        error_log('PHPMailer not available; cannot send contact email.');
+        $mailConfigured = false;
     }
 }
 

@@ -9,10 +9,16 @@ if (str_ends_with($scriptName, '/includes/forgot_password.php')) {
     exit;
 }
 
+// Attempt to load Composer autoload (PHPMailer). If missing, log and continue
+$composerAutoload = __DIR__ . '/../vendor/autoload.php';
+if (file_exists($composerAutoload)) {
+    require_once $composerAutoload;
+} else {
+    error_log('Missing Composer autoload: ' . $composerAutoload);
+}
+
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
-
-require_once __DIR__ . '/../vendor/autoload.php';
 
 if (empty($_SESSION['user_forgot_csrf'])) {
     $_SESSION['user_forgot_csrf'] = bin2hex(random_bytes(32));
@@ -121,24 +127,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $smtpPass = str_replace(' ', '', trim($smtpPass));
 
                                 if ($smtpUser !== '' && $smtpPass !== '' && $smtpFrom !== '') {
-                                    try {
-                                        $mail = new PHPMailer(true);
-                                        $mail->isSMTP();
-                                        $mail->Host = $smtpHost;
-                                        $mail->SMTPAuth = true;
-                                        $mail->Username = $smtpUser;
-                                        $mail->Password = $smtpPass;
-                                        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                                        $mail->Port = $smtpPort;
+                                    if (class_exists('PHPMailer\\PHPMailer\\PHPMailer')) {
+                                        try {
+                                            $mail = new PHPMailer(true);
+                                            $mail->isSMTP();
+                                            $mail->Host = $smtpHost;
+                                            $mail->SMTPAuth = true;
+                                            $mail->Username = $smtpUser;
+                                            $mail->Password = $smtpPass;
+                                            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                                            $mail->Port = $smtpPort;
 
-                                        $mail->setFrom($smtpFrom, 'ABN Construction');
-                                        $mail->addAddress($email);
-                                        $mail->isHTML(true);
-                                        $mail->Subject = 'Reset your password';
-                                        $mail->Body = 'Click this link to reset your password: <a href="' . htmlspecialchars($resetLink, ENT_QUOTES) . '">' . htmlspecialchars($resetLink, ENT_QUOTES) . '</a><br><br>This link expires in 1 hour.';
-                                        $mail->send();
-                                    } catch (Exception $e) {
-                                        error_log('Forgot password SMTP send failed: ' . $e->getMessage());
+                                            $mail->setFrom($smtpFrom, 'ABN Construction');
+                                            $mail->addAddress($email);
+                                            $mail->isHTML(true);
+                                            $mail->Subject = 'Reset your password';
+                                            $mail->Body = 'Click this link to reset your password: <a href="' . htmlspecialchars($resetLink, ENT_QUOTES) . '">' . htmlspecialchars($resetLink, ENT_QUOTES) . '</a><br><br>This link expires in 1 hour.';
+                                            $mail->send();
+                                        } catch (Exception $e) {
+                                            error_log('Forgot password SMTP send failed: ' . $e->getMessage());
+                                        }
+                                    } else {
+                                        error_log('PHPMailer not available; cannot send reset email.');
                                     }
                                 }
                             }
