@@ -16,7 +16,7 @@ RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
 COPY . /var/www/html/
 
 # Install PHP dependencies
-RUN cd /var/www/html && composer install --no-dev --optimize-autoloader
+RUN cd /var/html && composer install --no-dev --optimize-autoloader --ignore-platform-reqs
 
 # Set proper permissions for the web server
 RUN chown -R www-data:www-data /var/www/html
